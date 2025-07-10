@@ -1,0 +1,72 @@
+name: Deploy EC2 with Terraform
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - deploy-dev
+      - deploy-prod
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "dev or prod"
+        required: true
+        default: "dev"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1  # Update if needed
+
+      - name: 🔧 Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: 🏷 Set STAGE variable
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "STAGE=${{ github.event.inputs.stage }}" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == "refs/tags/deploy-prod" ]]; then
+            echo "STAGE=prod" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == "refs/tags/deploy-dev" ]]; then
+            echo "STAGE=dev" >> $GITHUB_ENV
+          else
+            echo "STAGE=dev" >> $GITHUB_ENV
+          fi
+
+      - name: ⚙️ Terraform Init
+        run: terraform init
+
+      - name: 🚀 Terraform Apply
+        run: terraform apply -auto-approve -var-file="$STAGE.tfvars"
+
+      - name: 📤 Get Terraform Outputs (Public IPs)
+        id: get_ips
+        run: |
+          echo "WRITER_IP=$(terraform output -raw writer_public_ip)" >> $GITHUB_ENV
+          echo "READER_IP=$(terraform output -raw reader_public_ip)" >> $GITHUB_ENV
+
+      - name: 🔍 Health Check - Writer EC2 (Port 80)
+        run: |
+          echo "Checking if port 80 is reachable on $WRITER_IP..."
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$WRITER_IP)
+            if [ "$STATUS" -eq 200 ]; then
+              echo "✅ App is healthy and reachable (HTTP 200)"
+              exit 0
+            else
+              echo "⏳ Attempt $i: Not ready yet (status: $STATUS). Retrying in 5s..."
+              sleep 5
+            fi
+          done
+          echo "❌ App is not reachable on port 80 after multiple attempts"
+          exit 1
