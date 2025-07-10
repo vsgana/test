@@ -48,3 +48,27 @@ jobs:
         run: terraform init
 
       - name: 🚀 Terraform Apply
+        working-directory: test/assisment-1
+        run: terraform apply -auto-approve -var-file="$STAGE.tfvars"
+
+      - name: 📤 Get Terraform Outputs (Public IPs)
+        working-directory: test/assisment-1
+        run: |
+          echo "WRITER_IP=$(terraform output -raw writer_public_ip)" >> $GITHUB_ENV
+          echo "READER_IP=$(terraform output -raw reader_public_ip)" >> $GITHUB_ENV
+
+      - name: 🔍 Health Check - Writer EC2 (Port 80)
+        run: |
+          echo "Checking if port 80 is reachable on $WRITER_IP..."
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$WRITER_IP)
+            if [ "$STATUS" -eq 200 ]; then
+              echo "✅ App is healthy and reachable (HTTP 200)"
+              exit 0
+            else
+              echo "⏳ Attempt $i: Not ready yet (status: $STATUS). Retrying in 5s..."
+              sleep 5
+            fi
+          done
+          echo "❌ App is not reachable on port 80 after multiple attempts"
+          exit 1
