@@ -92,7 +92,7 @@ resource "aws_instance" "writer_instance" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
   key_name               = aws_key_pair.TF_key.key_name
-  iam_instance_profile   = aws_iam_instance_profile.writer_profile.name # ✅ declared in iam.tf
+  iam_instance_profile   = aws_iam_instance_profile.writer_profile1.name # ✅ declared in iam.tf
   security_groups        = [aws_security_group.seg_as.name] # ✅ correct SG name
   user_data = templatefile("${path.module}/scripts/scripts.sh", {
     BUCKET_NAME = aws_s3_bucket.log_bucket.bucket
@@ -108,7 +108,7 @@ resource "aws_instance" "reader_instance" {
   ami                    = var.ami_id
   instance_type          = "t2.micro"
   key_name               = aws_key_pair.TF_key.key_name
-  iam_instance_profile   = aws_iam_instance_profile.reader_profile.name # ✅ from iam.tf
+  iam_instance_profile   = aws_iam_instance_profile.reader_profile1.name # ✅ from iam.tf
   security_groups        = [aws_security_group.seg_as.name] # ✅ correct SG
   user_data = templatefile("${path.module}/scripts/reader.sh", {
   BUCKET_NAME = aws_s3_bucket.log_bucket.bucket
