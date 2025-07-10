@@ -44,16 +44,13 @@ jobs:
         uses: hashicorp/setup-terraform@v2
 
       - name: ⚙️ Terraform Init
-        working-directory: ./test/assisment-1
         run: terraform init
 
       - name: 🚀 Terraform Apply
-        working-directory: ./test/assisment-1
         run: terraform apply -auto-approve -var-file="${STAGE}.tfvars"
 
       - name: 📤 Get Terraform Outputs (Public IPs)
         id: get_ips
-        working-directory: ./test/assisment-1
         run: |
           echo "WRITER_IP=$(terraform output -raw writer_public_ip)" >> $GITHUB_ENV
           echo "READER_IP=$(terraform output -raw reader_public_ip)" >> $GITHUB_ENV
