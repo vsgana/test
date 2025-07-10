@@ -57,30 +57,29 @@ resource "random_id" "bucket_id" {
   byte_length = 4
 }
 
+# S3 Ownership Controls
 resource "aws_s3_bucket_ownership_controls" "logs" {
-  bucket = aws_s3_bucket.logs.id
-
+  bucket = aws_s3_bucket.log_bucket.id # ✅ fixed
   rule {
     object_ownership = "BucketOwnerEnforced"
   }
 }
 
+# S3 Access Block
 resource "aws_s3_bucket_public_access_block" "logs" {
-  bucket = aws_s3_bucket.logs.id
-
+  bucket = aws_s3_bucket.log_bucket.id # ✅ fixed
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
+# S3 Lifecycle Policy
 resource "aws_s3_bucket_lifecycle_configuration" "logs" {
-  bucket = aws_s3_bucket.logs.id
-
+  bucket = aws_s3_bucket.log_bucket.id # ✅ fixed
   rule {
     id     = "expire-logs"
     status = "Enabled"
-
     expiration {
       days = 7
     }
@@ -88,29 +87,29 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
   }
 }
 
+# Writer EC2
 resource "aws_instance" "aws_dev" {
-  ami = var.ami_id
-  instance_type = var.instance_type
-  depends_on = [aws_security_group.seg_as,
-     aws_iam_instance_profile.ec2_profile,
-     aws_s3_bucket.logs
-  ]
-  key_name = aws_key_pair.TF_key.key_name
-  iam_instance_profile =aws_iam_instance_profile.ec2_profile.name
-  tags = {
-     Name = "web-${var.stage}"
-     Stage = var.stage
-  }
+  ami                    = var.ami_id
+  instance_type          = var.instance_type
+  key_name               = aws_key_pair.TF_key.key_name
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name # ✅ declared in iam.tf
+  security_groups        = [aws_security_group.seg_as.name] # ✅ correct SG name
   user_data = templatefile("${path.module}/scripts/scripts.sh", {
-   bucket_name = aws_s3_bucket.log_bucket.bucket
-})
+    bucket_name = aws_s3_bucket.log_bucket.bucket
+  })
+  tags = {
+    Name  = "web-${var.stage}"
+    Stage = var.stage
+  }
 }
+
+# Reader EC2
 resource "aws_instance" "reader_instance" {
-  ami                    = "ami-0d03cb826412c6b0f"
-  key_name = aws_key_pair.TF_key.key_name
+  ami                    = var.ami_id
   instance_type          = "t2.micro"
-  iam_instance_profile   = aws_iam_instance_profile.reader_profile.name
-  security_groups        = [aws_security_group.ec2_sg.name]
+  key_name               = aws_key_pair.TF_key.key_name
+  iam_instance_profile   = aws_iam_instance_profile.reader_profile.name # ✅ from iam.tf
+  security_groups        = [aws_security_group.seg_as.name] # ✅ correct SG
   tags = {
     Name = "Reader-EC2"
   }
