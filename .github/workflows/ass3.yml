@@ -53,8 +53,9 @@ jobs:
       - name: 📤 Get Terraform Outputs (Public IPs)
         id: get_ips
         run: |
-          echo "writer_ip=$(terraform output -raw writer_public_ip)" >> $GITHUB_OUTPUT
-          echo "reader_ip=$(terraform output -raw reader_public_ip)" >> $GITHUB_OUTPUT
+          echo "writer_ip=$(terraform output -raw writer_public_ip)" >> "$GITHUB_OUTPUT"
+          echo "reader_ip=$(terraform output -raw reader_public_ip)" >> "$GITHUB_OUTPUT"
+          
           echo "Writer IP: $(terraform output -raw writer_public_ip)"
           echo "Reader IP: $(terraform output -raw reader_public_ip)"
 
@@ -78,37 +79,3 @@ jobs:
           done
           echo "❌ App is not reachable on port 80 after multiple attempts"
           exit 1
-
-  destroy:
-    runs-on: ubuntu-latest
-    needs: health-check
-    if: always()  # Optional: change to `if: success()` if you only want to destroy on success
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v3
-
-      - name: 🏷 Set STAGE variable (again)
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "STAGE=${{ github.event.inputs.stage }}" >> $GITHUB_ENV
-          elif [[ "${{ github.ref }}" == "refs/tags/deploy-prod" ]]; then
-            echo "STAGE=prod" >> $GITHUB_ENV
-          else
-            echo "STAGE=dev" >> $GITHUB_ENV
-          fi
-
-      - name: 🔐 Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
-
-      - name: 🔧 Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-
-      - name: ⚙️ Terraform Init
-        run: terraform init
-
-      - name: 🧹 Terraform Destroy (Post Verification)
-        run: terraform destroy -auto-approve -var-file="${STAGE}.tfvars"
