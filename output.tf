@@ -1,6 +1,6 @@
 output "writer_public_ip" {
   description = "Public IP of the writer EC2 instance"
-  value       = aws_instance.writer_instamce.public_ip
+  value       = aws_instance.writer_instance.public_ip
 }
 
 output "reader_public_ip" {
