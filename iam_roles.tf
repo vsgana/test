@@ -71,12 +71,12 @@ resource "aws_iam_role_policy_attachment" "reader_attach" {
 }
 
 # IAM Instance Profiles
-resource "aws_iam_instance_profile" "writer_profile" {
+resource "aws_iam_instance_profile" "writer_profile1" {
   name = "writer-profile"
   role = aws_iam_role.ec2_role_writer.name
 }
 
-resource "aws_iam_instance_profile" "reader_profile" {
+resource "aws_iam_instance_profile" "reader_profile1" {
   name = "reader-profile"
   role = aws_iam_role.ec2_role_reader.name
 }
