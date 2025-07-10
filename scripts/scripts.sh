@@ -45,36 +45,8 @@ chmod +x /opt/automate.sh
 # Run the automate.sh script to start the app
 bash /opt/automate.sh
 
-
-# --- App Setup ---
-
-
-
-# --- Shutdown script ---
-cat <<EOL > /opt/shutdown.sh
-#!/bin/bash
 aws s3 cp /var/log/cloud-init.log s3://${BUCKET_NAME}/ec2-logs/cloud-init.log
 aws s3 cp /opt/app.log s3://${BUCKET_NAME}/app/logs/app.log
-EOL
 
-chmod +x /opt/shutdown.sh
 
-# --- systemd service ---
-cat <<EOL > /etc/systemd/system/upload-logs.service
-[Unit]
-Description=Upload logs to S3 on shutdown
-DefaultDependencies=no
-Before=shutdown.target
-
-[Service]
-Type=oneshot
-ExecStart=/opt/shutdown.sh
-RemainAfterExit=true
-
-[Install]
-WantedBy=shutdown.target
-EOL
-
-systemctl daemon-reexec
-systemctl enable upload-logs.service
 
