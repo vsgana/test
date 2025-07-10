@@ -95,7 +95,7 @@ resource "aws_instance" "aws_dev" {
   iam_instance_profile   = aws_iam_instance_profile.writer_profile.name # ✅ declared in iam.tf
   security_groups        = [aws_security_group.seg_as.name] # ✅ correct SG name
   user_data = templatefile("${path.module}/scripts/scripts.sh", {
-    bucket_name = aws_s3_bucket.log_bucket.bucket
+    BUCKET_NAME = aws_s3_bucket.log_bucket.bucket
   })
   tags = {
     Name  = "web-${var.stage}"
