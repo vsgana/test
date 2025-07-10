@@ -88,7 +88,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
 }
 
 # Writer EC2
-resource "aws_instance" "aws_dev" {
+resource "aws_instance" "writer_instance" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
   key_name               = aws_key_pair.TF_key.key_name
@@ -98,7 +98,7 @@ resource "aws_instance" "aws_dev" {
     BUCKET_NAME = aws_s3_bucket.log_bucket.bucket
   })
   tags = {
-    Name  = "web-${var.stage}"
+    Name  = "Writer-Ec2"
     Stage = var.stage
   }
 }
@@ -110,7 +110,12 @@ resource "aws_instance" "reader_instance" {
   key_name               = aws_key_pair.TF_key.key_name
   iam_instance_profile   = aws_iam_instance_profile.reader_profile.name # ✅ from iam.tf
   security_groups        = [aws_security_group.seg_as.name] # ✅ correct SG
+  user_data = templatefile("${path.module}/scripts/reader.sh", {
+  BUCKET_NAME = aws_s3_bucket.log_bucket.bucket
+})
+
   tags = {
     Name = "Reader-EC2"
-  }
+    Stage=var.stage
+  } 
 }
