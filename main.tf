@@ -92,7 +92,7 @@ resource "aws_instance" "aws_dev" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
   key_name               = aws_key_pair.TF_key.key_name
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name # ✅ declared in iam.tf
+  iam_instance_profile   = aws_iam_instance_profile.writer_profile.name # ✅ declared in iam.tf
   security_groups        = [aws_security_group.seg_as.name] # ✅ correct SG name
   user_data = templatefile("${path.module}/scripts/scripts.sh", {
     bucket_name = aws_s3_bucket.log_bucket.bucket
