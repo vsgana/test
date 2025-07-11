@@ -16,6 +16,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     outputs:
       writer_ip: ${{ steps.get_ips.outputs.writer_ip }}
       reader_ip: ${{ steps.get_ips.outputs.reader_ip }}
@@ -53,11 +54,14 @@ jobs:
       - name: 📤 Get Terraform Outputs (Public IPs)
         id: get_ips
         run: |
-          echo "writer_ip=$(terraform output -raw writer_public_ip)" >> "$GITHUB_OUTPUT"
-          echo "reader_ip=$(terraform output -raw reader_public_ip)" >> "$GITHUB_OUTPUT"
-          
-          echo "Writer IP: $(terraform output -raw writer_public_ip)"
-          echo "Reader IP: $(terraform output -raw reader_public_ip)"
+          writer_ip=$(terraform output -raw writer_public_ip 2>/dev/null)
+          reader_ip=$(terraform output -raw reader_public_ip 2>/dev/null)
+
+          echo "writer_ip=$writer_ip" >> $GITHUB_OUTPUT
+          echo "reader_ip=$reader_ip" >> $GITHUB_OUTPUT
+
+          echo "Writer IP: $writer_ip"
+          echo "Reader IP: $reader_ip"
 
   health-check:
     runs-on: ubuntu-latest
@@ -67,6 +71,7 @@ jobs:
         run: |
           WRITER_IP=${{ needs.deploy.outputs.writer_ip }}
           echo "Checking if port 80 is reachable on $WRITER_IP..."
+
           for i in {1..10}; do
             STATUS=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" http://$WRITER_IP)
             if [ "$STATUS" -eq 200 ]; then
@@ -77,5 +82,6 @@ jobs:
               sleep 5
             fi
           done
+
           echo "❌ App is not reachable on port 80 after multiple attempts"
           exit 1
