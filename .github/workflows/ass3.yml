@@ -54,8 +54,8 @@ jobs:
       - name: 📤 Get Terraform Outputs (Public IPs)
         id: get_ips
         run: |
-          writer_ip=$(terraform output -raw writer_public_ip 2>/dev/null| grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}')
-          reader_ip=$(terraform output -raw reader_public_ip 2>/dev/null| grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}')
+          writer_ip=$(terraform output -raw writer_public_ip 2>/dev/null| grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n 1)
+          reader_ip=$(terraform output -raw reader_public_ip 2>/dev/null| grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n 1)
 
           echo "writer_ip=$writer_ip" >> $GITHUB_OUTPUT
           echo "reader_ip=$reader_ip" >> $GITHUB_OUTPUT
